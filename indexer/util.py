@@ -2,13 +2,11 @@
 
 import os
 
-
 DIR_SEPARATOR = ""
 if os.name == "nt":
-      DIR_SEPARATOR = "\\"
+    DIR_SEPARATOR = "\\"
 else:
-      DIR_SEPARATOR = "/"
-
+    DIR_SEPARATOR = "/"
 
 # Some headers recognized by C
 C_STD_LIB_RECOGNIZED_HEADERS = ["assert.h", "complex.h", "ctype.h",
@@ -24,7 +22,7 @@ C_STD_LIB_RECOGNIZED_HEADERS = ["assert.h", "complex.h", "ctype.h",
 
 # Some header files recognized by Linux/MacOS
 POSIX_STD_LIB_RECOGNIZED_HEADERS = ["netdb.h", "netinet/in.h", "arpa/inet.h",
-                                    "sys/socket.h","sys/types.h", "sys/stat.h",
+                                    "sys/socket.h", "sys/types.h", "sys/stat.h",
                                     "fcntl.h", "unistd.h", "sys/wait.h",
                                     "sys/un.h", "sys/time.h", "sys/resource.h",
                                     "sys/sem.h", "sys/shm.h", "sys/msg.h",
@@ -47,20 +45,19 @@ WIN_STD_LIB_RECOGNIZED_HEADERS = ["windows.h", "winsock2.h", "ws2tcpip.h",
                                   "winspool.h", "winresrc.h"]
 
 
-
 # Get the default C compiler and check if it is installed
 def get_default_c_compiler():
-      # Get the default C compiler
-      default_compiler = os.environ.get("CC")
-      if default_compiler is None:
-            default_compiler = "gcc"
+    # Get the default C compiler
+    default_compiler = os.environ.get("CC")
+    if default_compiler is None:
+        default_compiler = "gcc"
 
-      # Check if the default compiler is installed
-      if not os.system(default_compiler + " --version") == 0:
-            print("Error: No C compiler installed")
-            exit(1)
+    # Check if the default compiler is installed
+    if not os.system(default_compiler + " --version") == 0:
+        print("Error: No C compiler installed")
+        exit(1)
 
-      return default_compiler
+    return default_compiler
 
 
 # Get the current working directory
@@ -70,36 +67,36 @@ def get_cwd():
 
 # Converts a relative path to an absolute path
 def relative_to_absolute_path(relative_path):
-      return os.path.abspath(relative_path)
+    return os.path.abspath(relative_path)
 
 
 # Fetches all the .c and .h files recursively from the given root directory
 # using the os.walk function
 def fetch_paths(path):
-      c_files = []
-      h_files = []
-      for root, dirs, files in os.walk(path):
-            # Ignore files in the cmake-build-debug directory
-            if "cmake-build-debug" in root:
-                  continue
+    c_files = []
+    h_files = []
+    for root, dirs, files in os.walk(path):
+        # Ignore files in the cmake-build-debug directory
+        if "cmake-build-debug" in root:
+            continue
 
-            # Ignore files in the CMakeFiles directory
-            if "CMakeFiles" in root:
-                    continue
+        # Ignore files in the CMakeFiles directory
+        if "CMakeFiles" in root:
+            continue
 
-            for file in files:      # Add all the .c and .h files to the output arrays
-                  if file.endswith(".c"):
-                        c_files.append(os.path.join(root, file))
-                  elif file.endswith(".h"):
-                        h_files.append(os.path.join(root, file))
-      
-      return c_files, h_files
+        for file in files:  # Add all the .c and .h files to the output arrays
+            if file.endswith(".c"):
+                c_files.append(os.path.join(root, file))
+            elif file.endswith(".h"):
+                h_files.append(os.path.join(root, file))
+
+    return c_files, h_files
 
 
 # Loads the file into a list of lines
 def load_file(path):
-      with open(path, "r") as f:
-            return f.readlines()
+    with open(path, "r") as f:
+        return f.readlines()
 
 
 # Get all the preprocessor directives from a list of lines
@@ -108,12 +105,12 @@ def load_file(path):
 # The header guards must be removed, and all the pre processor directives must be copied to the top
 # of the output file.
 def get_preprocessor_directives(lines):
-      directives = []
-      for line in lines:
-            if line.startswith("#"):  # Preprocessor directives start with "#"
-                  directives.append(line)
+    directives = []
+    for line in lines:
+        if line.startswith("#"):  # Preprocessor directives start with "#"
+            directives.append(line)
 
-      return directives
+    return directives
 
 
 # Get all the preprocessor directives before the first line of code
@@ -121,80 +118,86 @@ def get_preprocessor_directives(lines):
 # should be left as is. (for example, for the initialization of Winsock in projects intended
 # to be compiled regardless of the OS, or any platform specific code)
 def get_top_preprocessor_directives(lines):
-      directives = []
-      for line in lines:
-            if line.startswith("#"):
-                  directives.append(line)
-            else:
-                  break
-      
-      return directives
+    directives = []
+    for line in lines:
+        if line.startswith("#"):
+            directives.append(line)
+        else:
+            break
 
+    return directives
 
 
 # Get all the local includes from a list of lines
 # Local includes are denoted by #include "file.h" (with quotes)
 def get_all_local_includes(preprocessor_directives):
-      includes = []
-      for directive in preprocessor_directives:
-            # If the preprocessor directive is an include and it is a local include
-            if directive.startswith("#include") and "\"" in directive:
-                  includes.append(directive)
-      
-      return includes
+    includes = []
+    for directive in preprocessor_directives:
+        # If the preprocessor directive is an include and it is a local include
+        if directive.startswith("#include") and "\"" in directive:
+            includes.append(directive)
+
+    return includes
 
 
 # Get all the std includes from a list of preprocessor directives
 # Std includes are denoted by #include <file.h> (with angle brackets)
 def get_std_includes(preprocessor_directives):
-      std_includes = []
-      for directive in preprocessor_directives:
-            if directive.startswith("#include") and "<" in directive:
-                  std_includes.append(directive)
-      
-      return std_includes
+    std_includes = []
+    for directive in preprocessor_directives:
+        if directive.startswith("#include") and "<" in directive:
+            std_includes.append(directive)
+
+    return std_includes
 
 
 # Returns the includes that are in the C standard library (stdlib.h, stdio.h, etc.)
 # This is needed because we might link third party libraries that are not in the standard library
 # These libraries must be linked when compiling the output C file.
 def get_includes_from_stdlib(includes):
-      stdlib_includes = []
+    stdlib_includes = []
 
-      for include in includes:
-            for stdlib_include in C_STD_LIB_RECOGNIZED_HEADERS:
-                  if stdlib_include in include:
-                        stdlib_includes.append(include)
+    for include in includes:
+        library = get_library_name_from_include(include)    # Get the library name from the include
 
-      return stdlib_includes
+        if library in C_STD_LIB_RECOGNIZED_HEADERS:         # If the library is in the C standard library
+            stdlib_includes.append(include)
+        elif library in WIN_STD_LIB_RECOGNIZED_HEADERS:     # If the library is in the Windows standard library
+            stdlib_includes.append(include)
+        elif library in POSIX_STD_LIB_RECOGNIZED_HEADERS:   # If the library is in the POSIX standard library
+            stdlib_includes.append(include)
+
+    return stdlib_includes
 
 
 # Does the same as the above, except it returns the includes that are not in the standard library
 def get_includes_outside_stdlib(includes):
-      stdlib_includes = get_includes_from_stdlib(includes)
-      return [include for include in includes if include not in stdlib_includes]
+    stdlib_includes = get_includes_from_stdlib(includes)
+
+    return [include for include in includes if include not in stdlib_includes]
 
 
 # Checks if the project contains a CMakeLists.txt file
 # If it does, the process of indexing third party libraries is simplified
 def project_has_cmake(root_dir):
-      # Check if there is a CMakeLists.txt file in the root directory of the project
-      if os.path.exists(root_dir + DIR_SEPARATOR + "CMakeLists.txt"):
-            return True
+    # Check if there is a CMakeLists.txt file in the root directory of the project
+    if os.path.exists(root_dir + DIR_SEPARATOR + "CMakeLists.txt"):
+        return True
 
 
 # Returns the name of the library in a given include statement
 # (The text between the angle brackets)
 def get_library_name_from_include(include):
-      return include.split("<")[1].split(">")[0]
+    return include.split("<")[1].split(">")[0]
+
 
 # Does the same as the above, except for a list of includes
 def get_library_names_from_includes(includes):
-        library_names = []
-        for include in includes:
-                library_names.append(get_library_name_from_include(include))
+    library_names = []
+    for include in includes:
+        library_names.append(get_library_name_from_include(include))
 
-        return library_names
+    return library_names
 
 
 # Removes the header guards from a header file
@@ -203,29 +206,30 @@ def get_library_names_from_includes(includes):
 # We should add support for both header guard types. If no "standard" header guards are found,
 # we should look for #pragma once
 def rm_header_guards(lines):
-      # Array of lines that should be deleted in the file
-      to_delete = []
-      # Get all the preprocessor directives
-      preprocessor_directives = get_preprocessor_directives(lines)
+    # Array of lines that should be deleted in the file
+    to_delete = []
+    # Get all the preprocessor directives
+    preprocessor_directives = get_preprocessor_directives(lines)
 
-      if len(preprocessor_directives) >= 3:
-            # Standard header guards
-            if preprocessor_directives[0].startswith("#ifndef") and preprocessor_directives[1].startswith("#define") and preprocessor_directives[-1].startswith("#endif"):
-                  to_delete.append(preprocessor_directives[0])
-                  to_delete.append(preprocessor_directives[1])
-                  to_delete.append(preprocessor_directives[-1])
+    if len(preprocessor_directives) >= 3:
+        # Standard header guards
+        if preprocessor_directives[0].startswith("#ifndef") and preprocessor_directives[1].startswith("#define") and \
+                preprocessor_directives[-1].startswith("#endif"):
+            to_delete.append(preprocessor_directives[0])
+            to_delete.append(preprocessor_directives[1])
+            to_delete.append(preprocessor_directives[-1])
 
-      elif len(preprocessor_directives) >= 1:
-            # Modern header guards
-            if preprocessor_directives[0].startswith("#pragma once"):
-                  to_delete.append(preprocessor_directives[0])
+    elif len(preprocessor_directives) >= 1:
+        # Modern header guards
+        if preprocessor_directives[0].startswith("#pragma once"):
+            to_delete.append(preprocessor_directives[0])
 
-      # Remove the header guards from the lines array
-      if len(to_delete) > 0:
-            for line in to_delete:
-                  lines.remove(line)
+    # Remove the header guards from the lines array
+    if len(to_delete) > 0:
+        for line in to_delete:
+            lines.remove(line)
 
-      return lines # Return the lines array without the header guards
+    return lines  # Return the lines array without the header guards
 
 
 # Get needed includes
@@ -234,56 +238,58 @@ def rm_header_guards(lines):
 # This is needed because we need to make sure all files needed in the project are indexed,
 # even if they are outside the project directory
 def get_all_needed_includes(includes, h_files):
-      needed_includes = []
-      for include in includes:
-            # Get the file path from the include statement
-            file_name = include.split("\"")[1]
-            abs_path = relative_to_absolute_path(file_name) # Convert the relative path to an absolute path
-            
-            # Check if the file exists in the h_files list
-            for file in h_files:
-                  if abs_path in file:
-                        needed_includes.append(file)
+    needed_includes = []
+    for include in includes:
+        # Get the file path from the include statement
+        file_name = include.split("\"")[1]
+        abs_path = relative_to_absolute_path(file_name)  # Convert the relative path to an absolute path
 
-      return needed_includes
+        # Check if the file exists in the h_files list
+        for file in h_files:
+            if abs_path in file:
+                needed_includes.append(file)
+
+    return needed_includes
 
 
 # Print an array of lines
 def cat(lines):
-      for line in lines:
-            print(line, end="")
+    for line in lines:
+        print(line, end="")
 
 
 # Get the header file content.
 # Returns the content of a header file without the header guards and the include statements
 def get_header_file_content(file):
-      lines = load_file(file)
-      lines = rm_header_guards(lines)
-      preprocessor_directives = get_preprocessor_directives(lines)
-      includes = get_all_local_includes(preprocessor_directives)
-      for include in includes:
-            lines.remove(include)
-      
-      return lines
+    lines = load_file(file)
+    lines = rm_header_guards(lines)
+    preprocessor_directives = get_preprocessor_directives(lines)
+    includes = get_all_local_includes(preprocessor_directives)
+    for include in includes:
+        lines.remove(include)
+
+    return lines
+
 
 def get_c_file_content(file):
-      lines = load_file(file)
-      preprocessor_directives = get_preprocessor_directives(lines)
-      includes = get_all_local_includes(preprocessor_directives)
-      for include in includes:
-            lines.remove(include)
-      
-      return lines
+    lines = load_file(file)
+    preprocessor_directives = get_preprocessor_directives(lines)
+    includes = get_all_local_includes(preprocessor_directives)
+    for include in includes:
+        lines.remove(include)
+
+    return lines
 
 
 # Gets all the prepocessor directives without the include statements
 def get_preprocessor_directives_without_includes(lines):
-      preprocessor_directives = get_preprocessor_directives(lines)
-      includes = get_all_local_includes(preprocessor_directives)
-      for include in includes:
-            lines.remove(include)
+    preprocessor_directives = get_preprocessor_directives(lines)
+    includes = get_all_local_includes(preprocessor_directives)
+    for include in includes:
+        lines.remove(include)
 
-      return lines
+    return lines
+
 
 # This function deletes the comments from a file
 # since comments are not needed in the output file
@@ -296,26 +302,26 @@ def get_preprocessor_directives_without_includes(lines):
 # 
 # The comment will not be deleted
 def remove_comments(lines):
-      to_delete = []
-      for line in lines:
-            if line.startswith("//"):
-                  to_delete.append(line)
+    to_delete = []
+    for line in lines:
+        if line.startswith("//"):
+            to_delete.append(line)
 
-            elif line.startswith("/*"):
-                  to_delete.append(line)
-                  for line in lines:
-                        if line.endswith("*/"):
-                              to_delete.append(line)
-                              break
-                        else:
-                              to_delete.append(line)
-      
-      for line in to_delete:
-            if line in lines:
-                  lines.remove(line)
+        elif line.startswith("/*"):
+            to_delete.append(line)
+            for line in lines:
+                if line.endswith("*/"):
+                    to_delete.append(line)
+                    break
+                else:
+                    to_delete.append(line)
 
-      return lines
+    for line in to_delete:
+        if line in lines:
+            lines.remove(line)
+
+    return lines
 
 
 def get_filename_from_path(path):
-      return path.split("/")[-1]
+    return path.split("/")[-1]
