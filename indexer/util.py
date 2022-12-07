@@ -9,7 +9,7 @@ else:
     DIR_SEPARATOR = "/"
 
 # Some headers recognized by C
-C_STD_LIB_RECOGNIZED_HEADERS = ["assert.h", "complex.h", "ctype.h",
+C_STD_LIB_RECOGNIZED_HEADERS = ("assert.h", "complex.h", "ctype.h",
                                 "errno.h", "fenv.h", "float.h",
                                 "inttypes.h", "iso646.h", "limits.h",
                                 "locale.h", "math.h", "setjmp.h",
@@ -18,10 +18,10 @@ C_STD_LIB_RECOGNIZED_HEADERS = ["assert.h", "complex.h", "ctype.h",
                                 "stdbool.h", "stddef.h", "stdint.h",
                                 "stdio.h", "stdlib.h", "stdnoreturn.h",
                                 "string.h", "tgmath.h", "threads.h",
-                                "time.h", "uchar.h", "wchar.h", "wctype.h"]
+                                "time.h", "uchar.h", "wchar.h", "wctype.h")
 
 # Some header files recognized by Linux/MacOS
-POSIX_STD_LIB_RECOGNIZED_HEADERS = ["netdb.h", "netinet/in.h", "arpa/inet.h",
+POSIX_STD_LIB_RECOGNIZED_HEADERS = ("netdb.h", "netinet/in.h", "arpa/inet.h",
                                     "sys/socket.h", "sys/types.h", "sys/stat.h",
                                     "fcntl.h", "unistd.h", "sys/wait.h",
                                     "sys/un.h", "sys/time.h", "sys/resource.h",
@@ -33,16 +33,16 @@ POSIX_STD_LIB_RECOGNIZED_HEADERS = ["netdb.h", "netinet/in.h", "arpa/inet.h",
                                     "sys/utsname.h", "sys/ptrace.h", "sys/personality.h",
                                     "sys/prctl.h", "sys/vfs.h", "sys/quota.h",
                                     "sys/mount.h", "sys/reboot.h", "sys/swap.h",
-                                    "sys/user.h", "sys/auxv.h"]
+                                    "sys/user.h", "sys/auxv.h")
 
 # Some header files recognized by Windows
-WIN_STD_LIB_RECOGNIZED_HEADERS = ["windows.h", "winsock2.h", "ws2tcpip.h",
+WIN_STD_LIB_RECOGNIZED_HEADERS = ("windows.h", "winsock2.h", "ws2tcpip.h",
                                   "winbase.h", "wincon.h", "winuser.h",
                                   "wingdi.h", "winnt.h", "winnls.h",
                                   "winerror.h", "winreg.h", "winperf.h",
                                   "winnetwk.h", "winldap.h", "wininet.h",
                                   "winhttp.h", "winsvc.h", "winsock.h",
-                                  "winspool.h", "winresrc.h"]
+                                  "winspool.h", "winresrc.h")
 
 
 # Get the default C compiler and check if it is installed
@@ -158,13 +158,13 @@ def get_includes_from_stdlib(includes):
     stdlib_includes = []
 
     for include in includes:
-        library = get_library_name_from_include(include)    # Get the library name from the include
+        library = get_library_name_from_include(include)  # Get the library name from the include statement
 
-        if library in C_STD_LIB_RECOGNIZED_HEADERS:         # If the library is in the C standard library
+        if library in C_STD_LIB_RECOGNIZED_HEADERS:  # If the library is in the C standard library
             stdlib_includes.append(include)
-        elif library in WIN_STD_LIB_RECOGNIZED_HEADERS:     # If the library is in the Windows standard library
+        elif library in WIN_STD_LIB_RECOGNIZED_HEADERS:  # If the library is in the Windows standard library
             stdlib_includes.append(include)
-        elif library in POSIX_STD_LIB_RECOGNIZED_HEADERS:   # If the library is in the POSIX standard library
+        elif library in POSIX_STD_LIB_RECOGNIZED_HEADERS:  # If the library is in the POSIX standard library
             stdlib_includes.append(include)
 
     return stdlib_includes
@@ -183,6 +183,30 @@ def project_has_cmake(root_dir):
     # Check if there is a CMakeLists.txt file in the root directory of the project
     if os.path.exists(root_dir + DIR_SEPARATOR + "CMakeLists.txt"):
         return True
+
+
+# TODO: Make this function work
+# If a CMakeLists.txt file is found, we can easily look for the third party libraries
+# by looking for the "target_link_libraries" command or even the "link_libraries" command
+def get_cmake_terget_linked_libraries(root_dir):
+    cmake_file = root_dir + DIR_SEPARATOR + "CMakeLists.txt"
+    lines = load_file(cmake_file)
+    project_target = get_cmake_project_target(lines)
+
+    libraries = []
+    for line in lines:
+        if "target_link_libraries" in line:
+            pass  # Implement this
+
+    return libraries
+
+
+# Returns the project target name from a CMakeLists.txt file
+# project(name [language])
+def get_cmake_project_target(cmake_lines):
+    for line in cmake_lines:
+        if "project" in line:
+            return line.split("project")[1].split(" ")[1].strip()
 
 
 # Returns the name of the library in a given include statement
@@ -271,6 +295,7 @@ def get_header_file_content(file):
     return lines
 
 
+# Get the contents of a source file
 def get_c_file_content(file):
     lines = load_file(file)
     preprocessor_directives = get_preprocessor_directives(lines)
@@ -303,6 +328,7 @@ def get_preprocessor_directives_without_includes(lines):
 # The comment will not be deleted
 def remove_comments(lines):
     to_delete = []
+
     for line in lines:
         if line.startswith("//"):
             to_delete.append(line)
@@ -323,5 +349,33 @@ def remove_comments(lines):
     return lines
 
 
+def delete_line_comments(lines):
+    pass
+
+
 def get_filename_from_path(path):
     return path.split("/")[-1]
+
+
+def get_filename_without_extension(path):
+    return get_filename_from_path(path).split(".")[0]
+
+
+# Returns the extension of an executable file for the current OS
+def get_executable_extension():
+    if os.name == "nt":
+        return ".exe"  # Windows
+    else:
+        return ""
+
+
+def build_linker_flag_for_library(lib):
+    return " -l" + lib
+
+
+def build_linker_flags_for_libraries(libraries):
+    flags = ""
+    for lib in libraries:
+        flags += build_linker_flag_for_library(lib)
+
+    return flags
