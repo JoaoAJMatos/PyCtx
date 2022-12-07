@@ -2,8 +2,8 @@ from util import *
 import os
 
 import xml.etree.ElementTree as ET  # Used for writting the XML file for the CodeBlocks project
-import xml.dom.minidom  # Used for formatting the XML file for the CodeBlocks project
-import shutil  # Used for copying the files to the CodeBlocks project directory
+import xml.dom.minidom              # Used for formatting the XML file for the CodeBlocks project
+import shutil                       # Used for copying the files to the CodeBlocks project directory
 
 
 # ProjectContext
@@ -18,7 +18,7 @@ class ProjectContext:
     #
     # @param path:          The path to the project directory
     # @param entry_point:   The entry point of the project (where the main function is)
-    # @param output_file:    The output file to write the indexed project to
+    # @param output_file:   The output file to write the indexed project to
     def __init__(self, path, entry_point, output_file):
         self.path = relative_to_absolute_path(path)
         self.entry_point = self.path + DIR_SEPARATOR + entry_point
@@ -28,19 +28,20 @@ class ProjectContext:
         self.c_files = []
         self.h_files = []
 
-        self.indexed_files = []  # Files that have already been indexed
-        self.indexed_includes = []  # All the include statements that have been indexed
+        self.indexed_files = []         # Files that have already been indexed
+        self.indexed_includes = []      # All the include statements that have been indexed
         self.third_party_includes = []  # All the third party include statements that have been indexed
 
         self.preprocessor_directives = []  # All the preprocessor directives in all the files
 
         self.headers_output = []  # The content of all the header files
-        self.c_output = []  # The content of all the c files
+        self.c_output = []        # The content of all the c files
 
     def index_project(self):
         # Index the entry point first
         self.index_file(self.entry_point)
 
+        # Get all the other file paths
         self.c_files, self.h_files = fetch_paths(self.path)
 
         # Index all the other files
@@ -96,24 +97,28 @@ class ProjectContext:
             os.remove(self.output_file)
 
         with open(self.output_file, "w") as output_file:
+            # Write the include statements first
             if len(self.indexed_includes) > 0:
                 for line in self.indexed_includes:
                     output_file.write(line)
 
                 output_file.write("\n\n")
 
+            # Write the rest of the top-level preprocessor directives
             if len(self.preprocessor_directives) > 0:
                 for line in self.preprocessor_directives:
                     output_file.write(line)
 
                 output_file.write("\n\n")
 
+            # Write the contents of all the header files
             for header in self.headers_output:
                 for line in header:
                     output_file.write(line)
 
             output_file.write("\n\n")
 
+            # Write the contents of all the c files
             for c_file in self.c_output:
                 for line in c_file:
                     output_file.write(line)
@@ -121,13 +126,15 @@ class ProjectContext:
     # Constructs a compiler command to be executed in order to correctly compile the indexed project
     # It takes into consideration all the third party libraries that should be linked to the executable
     def build_compiler_command(self):
-        default_compiler = get_default_c_compiler()
-        executable_extension = get_executable_extension()
-        executable_filename = get_filename_without_extension(self.output_file)
-        library_linker_flags = build_linker_flags_for_libraries(self.third_party_includes)
+        default_compiler = get_default_c_compiler()                                         # Get default compiler
+        executable_extension = get_executable_extension()                                   # Get the extension for the executable
+        executable_filename = get_filename_without_extension(self.output_file)              # Get the filename of the output file without the extension
+        library_linker_flags = build_linker_flags_for_libraries(self.third_party_includes)  # Get the linker flags for the third party libraries
 
+        # Build the compiler command
         compiler_command = default_compiler + " " + self.output_file + " -o " + executable_filename + executable_extension
 
+        # Append the linker flags to the compiler command
         if len(library_linker_flags) > 0:
             compiler_command += " " + library_linker_flags
 
