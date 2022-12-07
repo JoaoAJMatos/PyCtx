@@ -30,6 +30,7 @@ class ProjectContext:
 
         self.indexed_files = []  # Files that have already been indexed
         self.indexed_includes = []  # All the include statements that have been indexed
+        self.third_party_includes = []  # All the third party include statements that have been indexed
 
         self.preprocessor_directives = []  # All the preprocessor directives in all the files
 
@@ -43,11 +44,11 @@ class ProjectContext:
         self.c_files, self.h_files = fetch_paths(self.path)
 
         # Index all the other files
-        for file in self.c_files:
+        for file in self.c_files:  # C files
             if file != self.entry_point:
                 self.index_file(file)
 
-        for file in self.h_files:
+        for file in self.h_files:  # H files
             if file != self.entry_point:
                 self.index_file(file)
 
@@ -117,6 +118,21 @@ class ProjectContext:
                 for line in c_file:
                     output_file.write(line)
 
+    # Constructs a compiler command to be executed in order to correctly compile the indexed project
+    # It takes into consideration all the third party libraries that should be linked to the executable
+    def build_compiler_command(self):
+        default_compiler = get_default_c_compiler()
+        executable_extension = get_executable_extension()
+        executable_filename = get_filename_without_extension(self.output_file)
+        library_linker_flags = build_linker_flags_for_libraries(self.third_party_includes)
+
+        compiler_command = default_compiler + " " + self.output_file + " -o " + executable_filename + executable_extension
+
+        if len(library_linker_flags) > 0:
+            compiler_command += " " + library_linker_flags
+
+        return compiler_command
+
 
 # This class is used to convert our multi file CMake project into a Codeblocks project
 class CodeBlocksContextCreator:
@@ -137,7 +153,7 @@ class CodeBlocksContextCreator:
     # in the #include statements to match the new file paths.
     # In codeblocks, all the files are in the root directory of the project. Although they can be
     # in virtual folders inside the IDE.
-    def refactor_includes():
+    def refactor_includes(self):
         pass
 
     def create_codeblocks_project_config(self):
